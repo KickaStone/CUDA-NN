@@ -32,4 +32,5 @@ class NeuralNetwork{
         std::vector<double*> test_data;
         std::vector<int> test_labels;
 
+        bool is_valid();
 };

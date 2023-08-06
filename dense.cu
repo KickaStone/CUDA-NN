@@ -27,6 +27,14 @@ Dense::Dense(int input_size, int output_size, cudnnActivationMode_t mode)
     CUDNN_CHECK(cudnnCreate(&cudnn_handle));
 
     curandDestroyGenerator(curand_generator);
+
+    CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc));
+    CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc, activation_mode, CUDNN_PROPAGATE_NAN, 0));
+
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
+    CUDNN_CHECK(cudnnSetTensor4dDescriptor(input_desc, CUDNN_TENSOR_NCHW, CUDNN_DATA_DOUBLE, 1, 1, input_size, 1));
+    CUDNN_CHECK(cudnnSetTensor4dDescriptor(output_desc, CUDNN_TENSOR_NCHW, CUDNN_DATA_DOUBLE, 1, 1, output_size, 1));
 }
 
 Dense::~Dense()
@@ -60,38 +68,13 @@ double* Dense::forward(double *input_data) {
 //    cublasPrintMat(bias, output_size, 1);
 //    cublasPrintMat(a, output_size, 1);
 
-
-    // a += bias
     CUBLAS_CHECK(cublasDaxpy(cublas_handle, output_size, &alpha, bias, 1, a, 1));
-
-//    cublasPrintMat(a, output_size, 1, "a");
-
-    cudnnTensorDescriptor_t desc;
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&desc));
-    CUDNN_CHECK(cudnnSetTensor4dDescriptor(desc, CUDNN_TENSOR_NCHW, CUDNN_DATA_DOUBLE, 1, 1, output_size, 1));
-
-    cudnnActivationDescriptor_t act_desc;
-    CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc));
-    CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc, CUDNN_ACTIVATION_SIGMOID, CUDNN_PROPAGATE_NAN, 0));
-    CUDNN_CHECK(cudnnActivationForward(cudnn_handle, act_desc, &alpha, desc, a, &beta, desc, a));
-
-    cudnnDestroyTensorDescriptor(desc);
-    cudnnDestroyActivationDescriptor(act_desc);
+    CUDNN_CHECK(cudnnActivationForward(cudnn_handle, act_desc, &alpha, output_desc, a, &beta, output_desc, a));
     return a;
 }
 
 double* Dense::backward(double *output_grad) {
 
-    cudnnActivationDescriptor_t act_desc;
-    CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc));
-    CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc, CUDNN_ACTIVATION_SIGMOID, CUDNN_PROPAGATE_NAN, 0));
-    
-    cudnnTensorDescriptor_t a_desc;
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&a_desc));
-    CUDNN_CHECK(cudnnSetTensor4dDescriptor(a_desc, CUDNN_TENSOR_NCHW, CUDNN_DATA_DOUBLE, 1, 1, output_size, 1));
-
-    cudnnTensorDescriptor_t d_a_desc;
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&d_a_desc));
 
     double *d_dz;
     CUDA_CHECK(cudaMalloc((void **)&d_dz, output_size * sizeof(double)));
@@ -99,7 +82,7 @@ double* Dense::backward(double *output_grad) {
 
     double alpha = 1.0;
     double beta = 0.0;
-    CUDNN_CHECK(cudnnActivationBackward(cudnn_handle, act_desc, &alpha, a_desc, a, a_desc, output_grad, a_desc, input, &beta, a_desc, d_dz));
+    CUDNN_CHECK(cudnnActivationBackward(cudnn_handle, act_desc, &alpha, output_desc, a, output_desc, output_grad, input_desc, input, &beta, output_desc, d_dz));
     
     // std::cout << "d_dz" << std::endl;
     // cublasPrintMat(d_dz, output_size, 1);
@@ -117,7 +100,6 @@ double* Dense::backward(double *output_grad) {
     CUBLAS_CHECK(cublasDaxpy(cublas_handle, output_size, &alpha, d_dz, 1, d_bias, 1));
     // cublasPrintMat(d_bias, output_size, 1, "d_bias");
 
-
     // calculate d_input
     CUBLAS_CHECK(cublasDgemm(cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N,
                              input_size, 1, output_size,
@@ -125,8 +107,7 @@ double* Dense::backward(double *output_grad) {
                              &beta, input_grad, input_size));
     // std::cout << "d_input" << std::endl;
     // cublasPrintMat(input_grad, input_size, 1);
-
-    CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc));
+    CUDA_CHECK(cudaFree(d_dz));
     return input_grad;
 }
 

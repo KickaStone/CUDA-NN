@@ -26,7 +26,11 @@ void NeuralNetwork::add_layer(Layer* layer) {
 }
 
 void NeuralNetwork::train()
-{
+{   
+    if(is_valid() == false) {
+        throw std::runtime_error("invalid network");
+    }
+    
     double *grad;
     double *h_grad;
     CUDA_CHECK(cudaMalloc(&grad, sizeof(double) * num_output));
@@ -45,10 +49,10 @@ void NeuralNetwork::train()
             }
             update(lr/batch_size);
         }
-
         std::cout << "epoch: " << e << " loss: " << loss/2 << ", acc: " << predict() << "/" << test_data.size() << std::endl;
     }
     CUDA_CHECK(cudaFree(grad));
+    CUDA_CHECK(cudaFreeHost(h_grad));
 }
 
 double* NeuralNetwork::forward(double *x) {
@@ -89,6 +93,37 @@ void NeuralNetwork::setData(std::vector<double *> &train_data, std::vector<int> 
         this->test_data.push_back(tmp);
     }
     this->test_labels = test_labels;
+}
+
+bool NeuralNetwork::is_valid()
+{
+    // check layer
+    if(num_layers != layers.size())
+        throw std::runtime_error("num_layers != layers.size()");
+    int input = num_input;
+    for(int i = 0; i < num_layers; i++) {
+        if(layers[i] == nullptr)
+            throw std::runtime_error("layers[" + std::to_string(i) + "] == nullptr");
+
+        if(layers[i]->get_input_size() != input)
+            throw std::runtime_error("layers[" + std::to_string(i) + "]->get_input_size() != last output");
+        input = layers[i]->get_output_size();
+    }
+    if(input != num_output)
+        throw std::runtime_error("input != num_output");
+
+    // check data
+    if(train_data.size() == 0 || train_data.size() != train_labels.size())
+        throw std::runtime_error("train_data invalid");
+
+    if(test_data.size() == 0 || test_data.size() != test_labels.size())
+        throw std::runtime_error("test_data invalid");
+    
+    // check params
+    if(epoch <= 0 || batch_size <= 0 || lr <= 0)
+        throw std::runtime_error("params invalid");
+
+    return true;
 }
 
 void NeuralNetwork::setParams(int epoch, int batch_size, double lr)

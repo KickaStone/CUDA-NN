@@ -3,7 +3,9 @@ project(nntest)
 add_executable(nntest 
     # cublas_test.cu
     # dense_test.cu
-    # cudnn_test.cu
+    cudnn_test.cu
+    # conv_test.cu
+    maxpooling_test.cu
     network_test.cu
 )
 

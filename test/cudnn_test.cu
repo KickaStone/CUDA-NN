@@ -4,6 +4,8 @@
 #include <iostream>
 #include <cublas_v2.h>
 
+#include "../common.h"
+
 
 using namespace Eigen;
 using namespace std;
@@ -40,4 +42,45 @@ TEST(cudnn, actBack){
     
     cudnnDestroyTensorDescriptor(desc);
 
+}
+
+TEST(cudnn, conv){
+    
+        MatrixXd a(3, 3);
+        a << 1, 2, 3,
+            4, 5, 6,
+            7, 8, 9;
+
+        MatrixXd b(2, 2);
+        b << 1, 2,
+            3, 4;
+
+        double *d_a;
+        double *d_b;
+        double *d_c;
+
+        CUDA_CHECK(cudaMalloc((void**)&d_a, 9 * sizeof(double)));
+        CUDA_CHECK(cudaMalloc((void**)&d_b, 4 * sizeof(double)));
+        CUDA_CHECK(cudaMalloc((void**)&d_c, 4 * sizeof(double)));
+
+        CUBLAS_CHECK(cublasSetMatrix(9, 1, sizeof(double), a.data(), 9, d_a, 9));
+        CUBLAS_CHECK(cublasSetMatrix(4, 1, sizeof(double), b.data(), 4, d_b, 4));
+
+        cudnnHandle_t handle;
+        CUDNN_CHECK(cudnnCreate(&handle));
+
+        cudnnTensorDescriptor_t descA;
+        CUDNN_CHECK(cudnnCreateTensorDescriptor(&descA));
+        CUDNN_CHECK(cudnnSetTensor4dDescriptor(descA, CUDNN_TENSOR_NCHW, CUDNN_DATA_DOUBLE, 1, 1, 3, 3));
+
+        cudnnFilterDescriptor_t descB;
+        CUDNN_CHECK(cudnnCreateFilterDescriptor(&descB));
+        CUDNN_CHECK(cudnnSetFilter4dDescriptor(descB, CUDNN_DATA_DOUBLE, CUDNN_TENSOR_NCHW, 1, 1, 2, 2));
+
+        cudnnConvolutionDescriptor_t descConv;
+        CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&descConv));
+        CUDNN_CHECK(cudnnSetConvolution2dDescriptor(descConv, 0, 0, 1, 1, 1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_DOUBLE));
+
+
+        
 }

@@ -10,7 +10,7 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 include_directories(
         "c:/Program Files/NVIDIA/CUDNN/v8.9/include"
-        ../cudnn-frontend/include
+        ${CMAKE_SOURCE_DIR}/cudnn-frontend/include
 )
 
 link_directories(
@@ -35,6 +35,10 @@ add_library(${this} STATIC
         network.cuh
         network.cu
         mnist_loader.h
+        conv.cuh
+        conv.cu
+        maxpooling.cuh
+        maxpooling.cu
 )
 
 find_package(Eigen3 REQUIRED)

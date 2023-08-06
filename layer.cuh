@@ -1,6 +1,8 @@
 #ifndef _LAYER_CUH_
 #define _LAYER_CUH_
 #include "common.h"
+#include <cudnn.h>
+#include <curand.h>
 
 
 class Layer{
