@@ -102,6 +102,7 @@ double *ConvolutionalLayer::backward(double *output_grad)
     // CUDNN_CHECK(cudnnConvolutionBackwardBias(cudnn_handle, &alpha, output_desc, d_dz, &alpha, bias_desc, db));
     CUDNN_CHECK(cudnnConvolutionBackwardFilter(cudnn_handle, &alpha, input_desc, input, output_desc, d_dz, conv_desc, CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1, nullptr, 0, &alpha, filter_desc, dK));
     CUDNN_CHECK(cudnnConvolutionBackwardData(cudnn_handle, &alpha, filter_desc, K, output_desc, d_dz, conv_desc, CUDNN_CONVOLUTION_BWD_DATA_ALGO_1, nullptr, 0, &beta, input_desc, input_grad));
+    CUDA_CHECK(cudaFree(d_dz));
     return input_grad;
 }
 
