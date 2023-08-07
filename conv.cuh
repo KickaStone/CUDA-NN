@@ -52,7 +52,6 @@ private:
     int stride{};
     int height_out{};
     int width_out{};
-    cudnnActivationMode_t activation_mode{CUDNN_ACTIVATION_RELU};
 
     double *K{}; // kernels
     double *b{}; // bias
@@ -63,8 +62,11 @@ private:
     double *dK{};
     double *db{};
     double *da{};
+    double *dz{};
 
     cudnnHandle_t cudnn_handle;
+    cudnnActivationMode_t activation_mode{CUDNN_ACTIVATION_RELU};
+    cudnnActivationDescriptor_t act_desc_identity;
     cudnnActivationDescriptor_t act_desc;
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;

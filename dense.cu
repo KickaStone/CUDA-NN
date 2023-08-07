@@ -49,6 +49,9 @@ Dense::~Dense()
 
         CUBLAS_CHECK(cublasDestroy(cublas_handle));
         CUDNN_CHECK(cudnnDestroy(cudnn_handle));
+        CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
     }catch(const std::exception& e){
         std::cerr << e.what() << '\n';
     }

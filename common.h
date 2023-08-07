@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <cublas_v2.h>
-#include <Eigen/Dense>
 
 #define CUDA_CHECK(expression)                               \
   {                                                          \
@@ -36,12 +35,21 @@
     }                                                        \
   }
 
-
 static void cublasPrintMat(double* mat, int m, int n, std::string tag){
     std::cout << tag << std::endl;
-    Eigen::MatrixXd A(m, n);
-    cublasGetMatrix(m, n, sizeof(double), mat, m, A.data(), m);
-    std::cout << A << std::endl;
+    double *h_tmp;
+
+    CUDA_CHECK(cudaMallocHost((void **)&h_tmp, m * n * sizeof(double)));
+    CUDA_CHECK(cudaMemcpy(h_tmp, mat, m * n * sizeof(double), cudaMemcpyDeviceToHost));
+
+    for(int i = 0; i < m; i ++){
+      for(int j = 0; j < n; j++){
+        std::cout << h_tmp[i * n + j] << " ";
+      }
+      std::cout << std::endl;
+    }
+    std::cout << std::endl;
+    CUDA_CHECK(cudaFreeHost(h_tmp));
 }
 
 #endif //CUDA_CHECK_H

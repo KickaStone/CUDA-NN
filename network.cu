@@ -33,12 +33,15 @@ void NeuralNetwork::train()
     
     double *grad;
     double *h_grad;
+    double learning_rate = 0;
     CUDA_CHECK(cudaMalloc(&grad, sizeof(double) * num_output));
     CUDA_CHECK(cudaMallocHost(&h_grad, sizeof(double) * num_output));
-    for(int e = 0; e < epoch; e++) {
+    for(int e = 0; e < params.epoch; e++) {
+        shuffle();
         double loss = 0.0;
-        for(int i = 0; i < train_data.size(); i += batch_size){
-            for(int j = 0; j < batch_size; j++) {
+        learning_rate = decay_lr(e);
+        for(int i = 0; i < train_data.size(); i += params.batch_size){
+            for(int j = 0; j < params.batch_size; j++) {
                 double *output = forward(train_data[i + j]);
                 cal_l2_grad<<<(num_output + 255) / 256, 256>>>(output, train_labels[i + j], grad, num_output);
                 cublasGetMatrix(num_output, 1, sizeof(double), grad, num_output, h_grad, num_output);
@@ -47,9 +50,11 @@ void NeuralNetwork::train()
                 }
                 backward(grad);
             }
-            update(lr/batch_size);
+            update(learning_rate / params.batch_size);
         }
-        std::cout << "epoch: " << e << " loss: " << loss/2 << ", acc: " << predict() << "/" << test_data.size() << std::endl;
+        std::cout << "epoch: " << e <<  "/" << params.epoch << "\tlr: " << 
+            learning_rate << "\tloss: " << loss/(2 * train_data.size()) << "\tacc: " << 
+            predict() << "/" << test_data.size() << std::endl;
     }
     CUDA_CHECK(cudaFree(grad));
     CUDA_CHECK(cudaFreeHost(h_grad));
@@ -59,7 +64,6 @@ double* NeuralNetwork::forward(double *x) {
     double *input = x;
     for(int i = 0; i < num_layers; i++) {
         input = layers[i]->forward(input);
-        // cublasPrintMat(input, 1, layers[i]->get_output_size(), "input_" + std::to_string(i));
     }
     return input;
 }
@@ -68,7 +72,6 @@ double* NeuralNetwork::backward(double *gard){
     double *grad = gard;
     for(int i = num_layers - 1; i >= 0; i--) {
         grad = layers[i]->backward(grad);
-        // cublasPrintMat(grad, 1, layers[i]->get_input_size(), "grad_" + std::to_string(i));
     }
     return grad;
 }
@@ -120,17 +123,33 @@ bool NeuralNetwork::is_valid()
         throw std::runtime_error("test_data invalid");
     
     // check params
-    if(epoch <= 0 || batch_size <= 0 || lr <= 0)
+    if(params.epoch <= 0 || params.batch_size <= 0 || params.lr <= 0)
         throw std::runtime_error("params invalid");
 
     return true;
 }
 
-void NeuralNetwork::setParams(int epoch, int batch_size, double lr)
+void NeuralNetwork::shuffle()
 {
-    this->epoch = epoch;
-    this->batch_size = batch_size;
-    this->lr = lr;
+    srand(time(NULL));
+    for(int i = 0; i < train_data.size(); i++){
+        int j = rand() % train_data.size();
+        std::swap(train_data[i], train_data[j]);
+        std::swap(train_labels[i], train_labels[j]);
+    }
+}
+
+double NeuralNetwork::decay_lr(int epoch)
+{
+    return params.lr / (1 + epoch * params.decay_rate);
+}
+
+void NeuralNetwork::setParams(int epoch, int batch_size, double lr, double decay_rate)
+{
+    params.epoch = epoch;
+    params.batch_size = batch_size;
+    params.lr = lr;
+    params.decay_rate = decay_rate;
 }
 
 void NeuralNetwork::update(double lr) {
@@ -139,18 +158,24 @@ void NeuralNetwork::update(double lr) {
     }
 }
 
-
 int NeuralNetwork::predict(){
-    Eigen::MatrixXd h_output(num_output, 1);
+    double *h_output;
+    CUDA_CHECK(cudaMallocHost(&h_output, sizeof(double) * num_output));
     int correct = 0;
+    int max_i = 0;
     for(int i = 0; i < test_data.size(); i++){
         double *output = forward(test_data[i]);
-        cublasGetMatrix(num_output, 1, sizeof(double), output, num_output, h_output.data(), num_output);
-        int tmp_i, tmp_j;
-        h_output.maxCoeff(&tmp_i, &tmp_j);
-        if(tmp_i == test_labels[i]) {
+        cublasGetMatrix(num_output, 1, sizeof(double), output, num_output, h_output, num_output);
+        max_i = 0;
+        for(int j = 0; j < num_output; j++) {
+            if(h_output[j] > h_output[max_i]) {
+                max_i = j;
+            }
+        }
+        if(max_i == test_labels[i]) {
             correct++;
         }
     }
+    CUDA_CHECK(cudaFreeHost(h_output));
     return correct;
 }

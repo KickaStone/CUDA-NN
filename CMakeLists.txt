@@ -41,13 +41,10 @@ add_library(${this} STATIC
         maxpooling.cu
 )
 
-find_package(Eigen3 REQUIRED)
-
 include(GoogleTest)
 target_link_libraries(
         ${this} PUBLIC
         cudnn
-        Eigen3::Eigen
         cublas
         curand
         GTest::gtest
