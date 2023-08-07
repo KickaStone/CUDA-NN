@@ -33,6 +33,6 @@ TEST(Network, cnn){
     nn.add_layer(new Dense(120, 84, CUDNN_ACTIVATION_SIGMOID));
     nn.add_layer(new Dense(84, 10, CUDNN_ACTIVATION_SIGMOID));
     nn.setData(train_data, train_label, test_data, test_label);
-    nn.setParams(30, 10, 0.5, 0.2);
+    nn.setParams(30, 10, 0.1, 0);
     nn.train();
 }

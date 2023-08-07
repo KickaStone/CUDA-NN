@@ -36,10 +36,10 @@ void NeuralNetwork::train()
     double learning_rate = 0;
     CUDA_CHECK(cudaMalloc(&grad, sizeof(double) * num_output));
     CUDA_CHECK(cudaMallocHost(&h_grad, sizeof(double) * num_output));
-    for(int e = 0; e < params.epoch; e++) {
+    for(int e = 1; e <= params.epoch; e++) {
         shuffle();
         double loss = 0.0;
-        learning_rate = decay_lr(e);
+        learning_rate = decay_lr(e-1);
         for(int i = 0; i < train_data.size(); i += params.batch_size){
             for(int j = 0; j < params.batch_size; j++) {
                 double *output = forward(train_data[i + j]);
