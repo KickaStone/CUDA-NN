@@ -29,6 +29,8 @@ private:
 
     double *input{};
     double *a{};
+    double *z{};
+    double *dz{};
     double *weights{}; // weights is a matrix of size (output_size, input_size), but int cublas view is (input_size, output_size)
     double *bias{};
     double *d_weights{};
