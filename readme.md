@@ -8,6 +8,7 @@
 # Cuda Implementation of CNN
 * This project provides several layer classes and a network class with tunable parameters
 * Try to solve [MNIST Dataset](http://yann.lecun.com/exdb/mnist/)
+* mini-batch SGD
 
 ## Dependency
 * CUDA Toolkit 12.2 
@@ -34,7 +35,7 @@
 * DelayRate 0
 
 ## result
-Accurate : 98.2%
+Accurate: 98.2%
 
 Running time: 1036.790s
 
