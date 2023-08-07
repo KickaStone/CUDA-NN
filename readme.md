@@ -6,6 +6,8 @@
   - [result](#result)
 
 # Cuda Implementation of CNN
+* This project provides several layer classes and a network class with tunable parameters
+* Try to solve [MNIST Dataset](http://yann.lecun.com/exdb/mnist/)
 
 ## Dependency
 * CUDA Toolkit 12.2 
