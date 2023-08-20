@@ -8,15 +8,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
-include_directories(
-        "c:/Program Files/NVIDIA/CUDNN/v8.9/include"
-        ${CMAKE_SOURCE_DIR}/cudnn-frontend/include
-)
-
-link_directories(
-        "c:/Program Files/NVIDIA/CUDNN/v8.9/lib/x64"
-)
-
 include(FetchContent)
 
 FetchContent_Declare(
