@@ -38,6 +38,6 @@
 
 ## result
 Accurate: 98.2%
-
 Running time: 1036.790s
+Device: 3060ti
 
